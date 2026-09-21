@@ -21,7 +21,7 @@ sitemap_urls = {n for u in re.findall(r"<loc>(.*?)</loc>", sm) if (n := norm(u))
 # Several GSC rows can normalise to one URL (query-string variants), so
 # aggregate rather than overwrite: a last-write-wins dict silently drops traffic.
 agg = {}
-for r in csv.DictReader(open("/mnt/user-data/uploads/Pages.csv")):
+for r in csv.DictReader(open("data/Pages.csv")):
     n = norm(r["Top pages"].strip())
     if not n:
         continue
