@@ -8,8 +8,13 @@ CACHE_DIR = os.path.join(ROOT, ".cache")
 SNAPSHOT_DIR = os.path.join(ROOT, "snapshots")
 os.makedirs(SNAPSHOT_DIR, exist_ok=True)
 
-d = json.load(open(os.path.join(CACHE_DIR, "pages.json")))
-probes = json.load(open(os.path.join(CACHE_DIR, "probes.json")))
+pages_path = os.path.join(CACHE_DIR, "pages.json")
+probes_path = os.path.join(CACHE_DIR, "probes.json")
+if not os.path.exists(pages_path):
+    print(f"ERROR: {pages_path} not found. Run crawl.py first.")
+    raise SystemExit(1)
+d = json.load(open(pages_path))
+probes = json.load(open(probes_path)) if os.path.exists(probes_path) else []
 ok = [p for p in d if "error" not in p]
 dead = {p["canon"] for p in d if "error" in p} | {p["canon"] for p in probes if p["status"] != 200}
 dead_ranking = sorted([p["canon"] for p in d if "error" in p and p.get("impressions", 0) > 0])

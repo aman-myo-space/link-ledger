@@ -6,9 +6,20 @@ SNAPSHOT_DIR = os.path.join(ROOT, "snapshots")
 SITE_DIR = os.path.join(ROOT, "site")
 os.makedirs(SITE_DIR, exist_ok=True)
 
-latest_snapshot = max(glob.glob(os.path.join(SNAPSHOT_DIR, "*.json")))
+snapshot_files = glob.glob(os.path.join(SNAPSHOT_DIR, "*.json"))
+if not snapshot_files:
+    print(f"ERROR: no snapshot files found in {SNAPSHOT_DIR}. Run analyze.py first.")
+    raise SystemExit(1)
+latest_snapshot = max(snapshot_files)
+
+health_path = os.path.join(CACHE_DIR, "health.json")
+if not os.path.exists(health_path):
+    print(f"ERROR: {health_path} not found. Run parse_clarity.py first.")
+    raise SystemExit(1)
+
 d = json.load(open(latest_snapshot))
-h = json.load(open(os.path.join(CACHE_DIR, "health.json")))
+h = json.load(open(health_path))
+print(f"using snapshot {os.path.basename(latest_snapshot)}")
 
 HTML = r"""<!DOCTYPE html>
 <html lang="en"><head>

@@ -20,7 +20,12 @@ def norm(u):
         return None
     return "https://myoperator.com" + (p.path.rstrip("/") or "/")
 
-sm = requests.get(SITEMAP, headers=UA, timeout=30).text
+try:
+    sm = requests.get(SITEMAP, headers=UA, timeout=30).text
+except requests.exceptions.RequestException as e:
+    print(f"ERROR: could not fetch sitemap from {SITEMAP}: {e}")
+    print("Crawl aborted before writing any output. Check network access to myoperator.com and re-run.")
+    raise SystemExit(1)
 sitemap_urls = {n for u in re.findall(r"<loc>(.*?)</loc>", sm) if (n := norm(u))}
 
 # Several GSC rows can normalise to one URL (query-string variants), so

@@ -7,7 +7,8 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 
 def parse(path):
     raw = open(path, encoding="utf-8-sig").read()
-    rows = list(csv.reader(io.StringIO(raw)))
+    # Clarity's export is tab-delimited despite the .csv extension.
+    rows = list(csv.reader(io.StringIO(raw), delimiter="\t"))
     out, cur = {"sections": {}}, None
     for r in rows:
         r = [c.strip() for c in r]
@@ -22,8 +23,8 @@ def parse(path):
             out["sections"][cur].append(r[1:])
     return out
 
-d90 = parse(os.path.join(DATA_DIR, "clarity-90d"))
-d3 = parse(os.path.join(DATA_DIR, "clarity-3d"))
+d90 = parse(os.path.join(DATA_DIR, "clarity-90d.csv"))
+d3 = parse(os.path.join(DATA_DIR, "clarity-3d.csv"))
 
 def g(d, sec, key, i=1):
     for r in d["sections"].get(sec, []):
