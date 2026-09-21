@@ -1,0 +1,111 @@
+Project name	MyOperator		
+Date range	06/24/2026 12:00 AM - 09/21/2026 11:59 PM		
+			
+			
+Visited URL contains	https://myoperator.com/blog/		
+			
+Metric	Sessions		
+	Total sessions	18706	
+	Bot sessions	177603	
+			
+Metric	Pages per session		
+	Average	1.388378061	
+			
+Metric	Scroll depth		
+	Average	33.22	
+			
+Metric	Active time spent		
+	Active time	46	
+	Total time	149	
+			
+Metric	Users overview		
+	Unique users	16785	
+	Sessions with new users	17104	
+	Sessions with returning users	1609	
+			
+Metric	Insights	No. of sessions	% of sessions
+	Rage clicks	65	0.35%
+	Dead click	979	5.23%
+	Excessive scrolling	3	0.02%
+	Quick back click	878	4.69%
+			
+Metric	Browsers	No. of sessions	% of sessions
+	Chrome	12510	66.88%
+	ChromeMobile	4301	22.99%
+	MobileSafari	697	3.73%
+	Edge	523	2.80%
+	GoogleApp	275	1.47%
+	Safari	153	0.82%
+	Firefox	112	0.60%
+	SamsungInternet	56	0.30%
+	Opera	33	0.18%
+	InstagramApp	17	0.09%
+	FacebookApp	11	0.06%
+	FirefoxMobile	7	0.04%
+	MiuiBrowser	4	0.02%
+	EdgeMobile	3	0.02%
+	Unknown	2	0.01%
+	UCBrowser	1	< 0.01%
+	YandexBrowser	1	< 0.01%
+			
+Metric	Top pages	No. of sessions	
+	https://myoperator.com/blog/whatsapp-business-api-pricing-india-2026	993	
+	https://myoperator.com/blog/everything-you-need-to-know-about-whatsapp-blue-tick	946	
+	https://myoperator.com/blog/complete-guide-for-toll-free-number	889	
+	https://myoperator.com/blog/how-to-send-bulk-whatsapp-messages-without-getting-banned	864	
+	https://myoperator.com/blog/top-10-voice-ai-agents-india-2026	710	
+	https://myoperator.com/pricing	694	
+	https://myoperator.com/blog/types-of-toll-free-numbers	567	
+	https://myoperator.com/	502	
+	https://myoperator.com/blog/guide-on-how-to-get-a-tollfree-number	467	
+	https://myoperator.com/blog/how-to-get-1800-toll-free-number-in-india	350	
+	https://myoperator.com/blog/call-centers-can-boost-customer-experience-with-these-five-incredible-techniques	307	
+	https://signup.myoperator.com/	272	
+			
+Metric	Smart events	No. of sessions	% of sessions
+	Outbound click	597	3.19%
+	Contact us	398	2.13%
+	Login	105	0.56%
+	Book	85	0.45%
+	Sign up	74	0.40%
+	Show more	19	0.10%
+	Submit form	11	0.06%
+			
+Metric	Referrer	No. of sessions	
+	www.google.com	6928	
+	myoperator.com	1665	
+	com.google.android.googlequicksearchbox	682	
+	www.bing.com	252	
+	www.sobot.io	133	
+	www.linkedin.com	100	
+	in.app.myoperator.com	87	
+	www.reddit.com	71	
+	com.linkedin.android	57	
+	chatgpt.com	40	
+	gemini.google.com	38	
+	duckduckgo.com	24	
+			
+Metric	JavaScript errors		
+	Sessions with JavaScript errors		
+	 total JavaScript errors	837	
+		No. of sessions	% of sessions
+	cannot read properties of null (reading 'classlist')	415	49.58%
+	maximum call stack size exceeded.	187	22.34%
+	script error.	166	19.83%
+	null is not an object (evaluating 'banner.classlist')	15	1.79%
+	failed to read the 'sessionstorage' property from 'window': access is denied for this document.	12	1.43%
+			
+Metric	Performance overview		
+	Score	82.019879	
+	LCP (Largest Contentful Paint)	2.663s	
+	INP (Interaction to Next Paint)	240ms	
+	CLS (Cumulative Layout Shift)	0.02875s	
+			
+Metric	Bot traffic		
+webScraperBotSessions	602		
+suspiciousDeviceBotSessions	120038		
+suspiciousNetworkBotSessions	476		
+suspiciousInteractionBotSessions	125904		
+ppcAdFraudBotSessions	12		
+otherBotsSessions	4		
+__typename	BotTypes		
