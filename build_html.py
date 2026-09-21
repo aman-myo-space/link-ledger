@@ -17,8 +17,14 @@ if not os.path.exists(health_path):
     print(f"ERROR: {health_path} not found. Run parse_clarity.py first.")
     raise SystemExit(1)
 
+diff_path = os.path.join(CACHE_DIR, "diff.json")
+if not os.path.exists(diff_path):
+    print(f"ERROR: {diff_path} not found. Run analyze.py first.")
+    raise SystemExit(1)
+
 d = json.load(open(latest_snapshot))
 h = json.load(open(health_path))
+diff = json.load(open(diff_path)).get("diff")
 print(f"using snapshot {os.path.basename(latest_snapshot)}")
 
 HTML = r"""<!DOCTYPE html>
@@ -81,15 +87,16 @@ a{color:var(--acc);text-decoration:none}a:hover{text-decoration:underline}
   <div class="tab" data-p="broken">Broken links</div>
   <div class="tab" data-p="dead">404s</div>
   <div class="tab" data-p="health">Reader behaviour</div>
+  <div class="tab" data-p="changes">Changes</div>
 </div>
 <div class="pane on" id="p-orphans"></div><div class="pane" id="p-pairs"></div>
 <div class="pane" id="p-clusters"></div><div class="pane" id="p-graph"></div>
 <div class="pane" id="p-broken"></div><div class="pane" id="p-dead"></div>
-<div class="pane" id="p-health"></div>
+<div class="pane" id="p-health"></div><div class="pane" id="p-changes"></div>
 <div class="tip" id="tip"></div>
 
 <script>
-const D = __PAYLOAD__, H = __HEALTH__;
+const D = __PAYLOAD__, H = __HEALTH__, DIFF = __DIFF__;
 const fmt = n => (+n).toLocaleString();
 const short = u => u.replace('https://myoperator.com/blog/','').replace('https://myoperator.com','');
 document.getElementById('date').textContent = D.generated;
@@ -180,6 +187,26 @@ document.getElementById('p-health').innerHTML =
  <tbody>${H.referrers.map(r=>{const ai=/chatgpt|gemini|perplexity|claude|copilot/i.test(r[0]);
  return `<tr><td>${r[0]} ${ai?'<span class="pill" style="border-color:#4d8ef7;color:#4d8ef7">AI</span>':''}</td><td class="num">${fmt(r[1])}</td></tr>`;}).join('')}</tbody></table></div>`;
 
+// CHANGES
+document.getElementById('p-changes').innerHTML = !DIFF ?
+ `<p class="note">No previous snapshot &mdash; this is the baseline.</p>` :
+ `<p class="note">Changes since the ${DIFF.previous_date} snapshot.</p>` +
+ `<h3>Orphans resolved (${DIFF.orphans_resolved.length})</h3>` +
+ table([{t:'Blog'}], DIFF.orphans_resolved.map(u=>[`<a href="${u}" target="_blank">${short(u)}</a>`])) +
+ `<h3>Orphans newly created (${DIFF.orphans_created.length})</h3>` +
+ table([{t:'Blog'}], DIFF.orphans_created.map(u=>[`<a href="${u}" target="_blank">${short(u)}</a>`])) +
+ `<h3>Clicks &amp; density by pillar</h3>` +
+ table([{t:'Pillar'},{t:'Clicks',n:1},{t:'Change',n:1},{t:'% change',n:1},{t:'Density',n:1},{t:'Density change',n:1}],
+  DIFF.pillars.map(p=>[p.name, fmt(p.clicks_curr),
+   `<span class="${p.clicks_abs>0?'good':p.clicks_abs<0?'bad':''}">${p.clicks_abs>0?'+':''}${fmt(p.clicks_abs)}</span>`,
+   p.clicks_pct===null?'&mdash;':`<span class="${p.clicks_pct>0?'good':p.clicks_pct<0?'bad':''}">${p.clicks_pct>0?'+':''}${p.clicks_pct}%</span>`,
+   p.density_curr,
+   `<span class="${p.density_abs>0?'good':p.density_abs<0?'bad':''}">${p.density_abs>0?'+':''}${p.density_abs}</span>`])) +
+ `<h3>Broken links: newly appeared (${DIFF.broken_new.length})</h3>` +
+ table([{t:'URL'}], DIFF.broken_new.map(u=>[short(u)])) +
+ `<h3>Broken links: fixed (${DIFF.broken_fixed.length})</h3>` +
+ table([{t:'URL'}], DIFF.broken_fixed.map(u=>[short(u)]));
+
 // GRAPH
 document.getElementById('p-graph').innerHTML =
  `<p class="note">Each dot is a blog. Bigger dot means more clicks from Google. Colour is the topic. Lines are links between blogs. Dots with a red ring have nothing linking to them.</p>
@@ -247,6 +274,7 @@ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
 </script></body></html>"""
 
 out = HTML.replace("__PAYLOAD__", json.dumps(d, separators=(",", ":"))) \
-          .replace("__HEALTH__", json.dumps(h, separators=(",", ":")))
+          .replace("__HEALTH__", json.dumps(h, separators=(",", ":"))) \
+          .replace("__DIFF__", json.dumps(diff, separators=(",", ":")))
 open(os.path.join(SITE_DIR, "index.html"), "w").write(out)
 print("written", round(len(out) / 1024), "kb")

@@ -1,4 +1,4 @@
-import datetime, json, os, collections, numpy as np
+import datetime, glob, json, os, collections, numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from buckets import classify, PARENT_COLOUR, PARENT_ORDER
@@ -7,6 +7,50 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 CACHE_DIR = os.path.join(ROOT, ".cache")
 SNAPSHOT_DIR = os.path.join(ROOT, "snapshots")
 os.makedirs(SNAPSHOT_DIR, exist_ok=True)
+
+
+def compute_diff(prev, curr):
+    """Diff two snapshots: orphans resolved/created, clicks and density per
+    pillar, and broken links fixed/newly appeared."""
+    prev_nodes = {n["id"]: n for n in prev.get("nodes", [])}
+    curr_nodes = {n["id"]: n for n in curr.get("nodes", [])}
+
+    orphans_resolved = sorted(
+        uid for uid, n in curr_nodes.items()
+        if n["inbound"] > 0 and prev_nodes.get(uid, {}).get("inbound") == 0
+    )
+    orphans_created = sorted(
+        uid for uid, n in curr_nodes.items()
+        if n["inbound"] == 0 and prev_nodes.get(uid, {}).get("inbound", 1) != 0
+    )
+
+    prev_pillars = {p["name"]: p for p in prev.get("parents", [])}
+    pillars = []
+    for p in curr.get("parents", []):
+        pp = prev_pillars.get(p["name"])
+        prev_clicks = pp["clicks"] if pp else 0
+        prev_density = pp["density"] if pp else 0.0
+        clicks_abs = p["clicks"] - prev_clicks
+        clicks_pct = round(clicks_abs / prev_clicks * 100, 1) if prev_clicks else None
+        pillars.append({
+            "name": p["name"],
+            "clicks_prev": prev_clicks, "clicks_curr": p["clicks"],
+            "clicks_abs": clicks_abs, "clicks_pct": clicks_pct,
+            "density_prev": prev_density, "density_curr": p["density"],
+            "density_abs": round(p["density"] - prev_density, 2),
+        })
+
+    prev_broken = set(prev.get("broken_targets", []))
+    curr_broken = set(curr.get("broken_targets", []))
+
+    return {
+        "previous_date": prev.get("generated"),
+        "orphans_resolved": orphans_resolved,
+        "orphans_created": orphans_created,
+        "pillars": pillars,
+        "broken_new": sorted(curr_broken - prev_broken),
+        "broken_fixed": sorted(prev_broken - curr_broken),
+    }
 
 pages_path = os.path.join(CACHE_DIR, "pages.json")
 probes_path = os.path.join(CACHE_DIR, "probes.json")
@@ -129,7 +173,17 @@ out = {"generated": today, "parents": parents, "nodes": nodes, "edges": edges,
                   "clicks": sum(n["clicks"] for n in nodes),
                   "dead_urls": len(dead_ranking), "broken_links": len(broken_targets),
                   "broken_link_instances": sum(out_dead.values())}}
+
+# Diff against the most recent existing snapshot, if any. On the first run
+# there is nothing to compare against, so diff stays None (baseline).
+existing_snapshots = sorted(glob.glob(os.path.join(SNAPSHOT_DIR, "*.json")))
+diff = None
+if existing_snapshots:
+    prev_snapshot = json.load(open(existing_snapshots[-1]))
+    diff = compute_diff(prev_snapshot, out)
+
 json.dump(out, open(os.path.join(SNAPSHOT_DIR, f"{today}.json"), "w"))
+json.dump({**out, "diff": diff}, open(os.path.join(CACHE_DIR, "diff.json"), "w"))
 
 t = out["totals"]
 print(f"blogs {t['blogs']} | static {t['static']} | blog-to-blog links {t['edges']}")
@@ -141,3 +195,10 @@ for p in out["parents"]:
     for c in out["clusters"]:
         if c["parent"] == p["name"]:
             print(f"  {c['sub'][:26]:28} {c['pages']:5} {c['clicks']:7} {c['internal_links']:6} {c['density']:5} {c['orphans']:5}")
+
+if diff is None:
+    print("\nno previous snapshot — this is the baseline")
+else:
+    print(f"\nDIFF vs {diff['previous_date']}: orphans resolved {len(diff['orphans_resolved'])} | "
+          f"orphans created {len(diff['orphans_created'])} | "
+          f"broken new {len(diff['broken_new'])} | broken fixed {len(diff['broken_fixed'])}")
