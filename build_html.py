@@ -121,40 +121,6 @@ document.getElementById('p-clusters').innerHTML =
  `<p class="note">Traffic and link health by topic. Density is links per page inside a topic: under 1 means the pages sit alone.</p>`+
  table([{t:'Topic'},{t:'Pages',n:1},{t:'Clicks',n:1},{t:'Impressions',n:1},{t:'Internal links',n:1},{t:'Density',n:1},{t:'Orphans',n:1}], crows);
 
-// BROKEN
-const off = D.nodes.filter(n=>n.dead_links>0).sort((a,b)=>b.clicks-a.clicks);
-document.getElementById('p-broken').innerHTML =
- `<p class="note">Links pointing at pages that no longer exist. Fix the link or restore the page.</p>`+
- table([{t:'Blog containing the broken link'},{t:'Clicks',n:1},{t:'Broken',n:1}],
-  off.map(n=>[`<a href="${n.id}" target="_blank">${short(n.id)}</a>`, fmt(n.clicks), `<span class="bad">${n.dead_links}</span>`]))+
- `<h3>Pages being linked to that are gone</h3>`+
- table([{t:'URL'}], D.broken_targets.map(u=>[short(u)]));
-
-// DEAD
-document.getElementById('p-dead').innerHTML =
- `<p class="note">Pages still showing up in Google but returning an error. Redirect each to the closest live page.</p>`+
- table([{t:'URL'}], D.dead.map(u=>[`<a href="${u}" target="_blank">${short(u)}</a>`]));
-
-// HEALTH
-document.getElementById('p-health').innerHTML =
- `<p class="note">What readers actually do on blog pages, from Microsoft Clarity. Last 90 days.</p>
- <div class="wrap" style="margin-bottom:18px"><table><thead><tr><th>Metric</th><th class="num">Value</th><th>What it means</th></tr></thead><tbody>
- <tr><td><b>Average scroll depth</b></td><td class="num warn">${H.scroll.long}%</td><td style="color:var(--mut)">Most readers stop a third of the way down</td></tr>
- <tr><td>Active time on page</td><td class="num">${H.active.long}s</td><td style="color:var(--mut)">Time actually reading, not just open</td></tr>
- <tr><td>Pages per session</td><td class="num">${(+H.pps.long).toFixed(2)}</td><td style="color:var(--mut)">Close to 1: almost nobody reads a second page</td></tr>
- </tbody></table></div>
- <h3>Where readers get stuck</h3>
- <div class="wrap" style="margin-bottom:18px"><table><thead><tr><th>Signal</th><th class="num">Sessions</th><th class="num">Share</th></tr></thead>
- <tbody>${H.friction.map(f=>`<tr><td>${f.k}</td><td class="num">${f.long.n}</td><td class="num warn">${f.long.p}</td></tr>`).join('')}</tbody></table></div>
- <h3>Conversions from blog pages</h3>
- <p class="note">Every one of these fires less often than a dead click.</p>
- <div class="wrap" style="margin-bottom:18px"><table><thead><tr><th>Action</th><th class="num">Sessions</th><th class="num">Share</th></tr></thead>
- <tbody>${H.events.map(e=>`<tr><td>${e.k}</td><td class="num">${e.n}</td><td class="num">${e.p}</td></tr>`).join('')}</tbody></table></div>
- <h3>Where readers come from</h3>
- <div class="wrap"><table><thead><tr><th>Source</th><th class="num">Sessions</th></tr></thead>
- <tbody>${H.referrers.map(r=>{const ai=/chatgpt|gemini|perplexity|claude|copilot/i.test(r[0]);
- return `<tr><td>${r[0]} ${ai?'<span class="pill" style="border-color:#4d8ef7;color:#4d8ef7">AI</span>':''}</td><td class="num">${fmt(r[1])}</td></tr>`;}).join('')}</tbody></table></div>`;
-
 // GRAPH
 document.getElementById('p-graph').innerHTML =
  `<p class="note">Each dot is a blog. Bigger dot means more clicks from Google. Colour is the topic. Lines are links between blogs. Dots with a red ring have nothing linking to them.</p>
