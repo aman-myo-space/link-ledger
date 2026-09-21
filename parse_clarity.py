@@ -1,4 +1,9 @@
-import csv, json, re, io
+import csv, json, os, re, io
+
+ROOT = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(ROOT, "data")
+CACHE_DIR = os.path.join(ROOT, ".cache")
+os.makedirs(CACHE_DIR, exist_ok=True)
 
 def parse(path):
     raw = open(path, encoding="utf-8-sig").read()
@@ -17,8 +22,8 @@ def parse(path):
             out["sections"][cur].append(r[1:])
     return out
 
-d90 = parse("/mnt/user-data/uploads/Clarity_MyOperator_Dashboard_09-21-2026_04_49_PM.csv")
-d3 = parse("/mnt/user-data/uploads/Clarity_MyOperator_Dashboard_09-21-2026_04_53_PM.csv")
+d90 = parse(os.path.join(DATA_DIR, "clarity-90d"))
+d3 = parse(os.path.join(DATA_DIR, "clarity-3d"))
 
 def g(d, sec, key, i=1):
     for r in d["sections"].get(sec, []):
@@ -55,6 +60,6 @@ health = {
     "perf": [[r[0], r[1]] for r in d90["sections"].get("Performance overview", [])],
     "referrers": [[r[0], r[1]] for r in d90["sections"].get("Referrer", [])],
 }
-json.dump(health, open("/home/claude/health.json", "w"), indent=1)
+json.dump(health, open(os.path.join(CACHE_DIR, "health.json"), "w"), indent=1)
 print(json.dumps({k: health[k] for k in ["scroll", "active", "pps", "sessions", "bots"]}, indent=1))
 print("errors", len(health["errors"]), "| events", len(health["events"]), "| perf", health["perf"])

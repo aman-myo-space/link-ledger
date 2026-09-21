@@ -1,10 +1,15 @@
-import json, collections, numpy as np
+import datetime, json, os, collections, numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from buckets import classify, PARENT_COLOUR, PARENT_ORDER
 
-d = json.load(open("/home/claude/pages.json"))
-probes = json.load(open("/home/claude/probes.json"))
+ROOT = os.path.dirname(os.path.abspath(__file__))
+CACHE_DIR = os.path.join(ROOT, ".cache")
+SNAPSHOT_DIR = os.path.join(ROOT, "snapshots")
+os.makedirs(SNAPSHOT_DIR, exist_ok=True)
+
+d = json.load(open(os.path.join(CACHE_DIR, "pages.json")))
+probes = json.load(open(os.path.join(CACHE_DIR, "probes.json")))
 ok = [p for p in d if "error" not in p]
 dead = {p["canon"] for p in d if "error" in p} | {p["canon"] for p in probes if p["status"] != 200}
 dead_ranking = sorted([p["canon"] for p in d if "error" in p and p.get("impressions", 0) > 0])
@@ -109,7 +114,8 @@ for pn in PARENT_ORDER:
                     "internal_links": internal, "density": round(internal / len(mem), 2),
                     "orphans": sum(1 for m in mem if m["inbound"] == 0)})
 
-out = {"generated": "2026-09-21", "parents": parents, "nodes": nodes, "edges": edges,
+today = datetime.date.today().isoformat()
+out = {"generated": today, "parents": parents, "nodes": nodes, "edges": edges,
        "clusters": sorted(cl, key=lambda x: (PARENT_ORDER.index(x["parent"]), -x["clicks"])), "pairs": uniq[:250],
        "dead": dead_ranking, "broken_targets": broken_targets,
        "totals": {"blogs": len(blogs), "static": len(statics), "edges": len(edges),
@@ -118,7 +124,7 @@ out = {"generated": "2026-09-21", "parents": parents, "nodes": nodes, "edges": e
                   "clicks": sum(n["clicks"] for n in nodes),
                   "dead_urls": len(dead_ranking), "broken_links": len(broken_targets),
                   "broken_link_instances": sum(out_dead.values())}}
-json.dump(out, open("/home/claude/snapshot.json", "w"))
+json.dump(out, open(os.path.join(SNAPSHOT_DIR, f"{today}.json"), "w"))
 
 t = out["totals"]
 print(f"blogs {t['blogs']} | static {t['static']} | blog-to-blog links {t['edges']}")

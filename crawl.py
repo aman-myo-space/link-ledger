@@ -1,8 +1,13 @@
-import csv, json, re
+import csv, json, os, re
 from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urlparse, urldefrag
 import requests
 from bs4 import BeautifulSoup
+
+ROOT = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(ROOT, "data")
+CACHE_DIR = os.path.join(ROOT, ".cache")
+os.makedirs(CACHE_DIR, exist_ok=True)
 
 UA = {"User-Agent": "Mozilla/5.0 (compatible; myoperator-content-audit)"}
 BODY_SELECTORS = [".blog-content", "div.w-richtext", "main"]
@@ -21,7 +26,7 @@ sitemap_urls = {n for u in re.findall(r"<loc>(.*?)</loc>", sm) if (n := norm(u))
 # Several GSC rows can normalise to one URL (query-string variants), so
 # aggregate rather than overwrite: a last-write-wins dict silently drops traffic.
 agg = {}
-for r in csv.DictReader(open("/mnt/user-data/uploads/Pages.csv")):
+for r in csv.DictReader(open(os.path.join(DATA_DIR, "Pages.csv"))):
     n = norm(r["Top pages"].strip())
     if not n:
         continue
@@ -90,11 +95,11 @@ probes = []
 if extra:
     with ThreadPoolExecutor(max_workers=14) as ex:
         probes = list(ex.map(probe, extra))
-json.dump(probes, open("/home/claude/probes.json", "w"))
+json.dump(probes, open(os.path.join(CACHE_DIR, "probes.json"), "w"))
 bad = [p for p in probes if p["status"] != 200]
 print(f"probed {len(probes)} off-sitemap link targets | broken {len(bad)}")
 
-json.dump(out, open("/home/claude/pages.json", "w"))
+json.dump(out, open(os.path.join(CACHE_DIR, "pages.json"), "w"))
 ok = [p for p in out if "error" not in p]
 print(f"universe {len(targets)} (sitemap {len(sitemap_urls)}, gsc-only {len(set(gsc)-sitemap_urls)})")
 print(f"fetched {len(ok)} | errors {len(out)-len(ok)}")

@@ -1,7 +1,14 @@
-import json
+import glob, json, os
 
-d = json.load(open("/home/claude/snapshot.json"))
-h = json.load(open("/home/claude/health.json"))
+ROOT = os.path.dirname(os.path.abspath(__file__))
+CACHE_DIR = os.path.join(ROOT, ".cache")
+SNAPSHOT_DIR = os.path.join(ROOT, "snapshots")
+SITE_DIR = os.path.join(ROOT, "site")
+os.makedirs(SITE_DIR, exist_ok=True)
+
+latest_snapshot = max(glob.glob(os.path.join(SNAPSHOT_DIR, "*.json")))
+d = json.load(open(latest_snapshot))
+h = json.load(open(os.path.join(CACHE_DIR, "health.json")))
 
 HTML = r"""<!DOCTYPE html>
 <html lang="en"><head>
@@ -230,5 +237,5 @@ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
 
 out = HTML.replace("__PAYLOAD__", json.dumps(d, separators=(",", ":"))) \
           .replace("__HEALTH__", json.dumps(h, separators=(",", ":")))
-open("/mnt/user-data/outputs/link-ledger.html", "w").write(out)
+open(os.path.join(SITE_DIR, "index.html"), "w").write(out)
 print("written", round(len(out) / 1024), "kb")
