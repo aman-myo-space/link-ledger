@@ -1,27 +1,37 @@
-import csv, json, re, io, os, glob
+import csv, json, os, glob
 
 def parse(path):
-    raw = open(path, encoding="utf-8-sig").read()
-    rows = list(csv.reader(io.StringIO(raw)))
-    out, cur = {"sections": {}, "range": "N/A"}, None
-    for r in rows:
-        r = [c.strip() for c in r]
-        if not any(r):
-            continue
-        if r[0] == "Date range":
-            out["range"] = r[1] if len(r) > 1 else "N/A"
-        elif r[0] == "Metric":
-            cur = r[1] if len(r) > 1 else None
-            if cur:
-                out["sections"][cur] = []
-        elif cur and r[0] == "" and len(r) > 1 and r[1]:
-            out["sections"][cur].append(r[1:])
+    """Parse Clarity CSV export with quoted fields."""
+    with open(path, encoding='utf-8-sig') as f:
+        reader = csv.reader(f)
+        out = {"sections": {}, "range": "N/A"}
+        cur_metric = None
+        
+        for row in reader:
+            # Skip empty rows
+            if not row or not any(row):
+                continue
+            
+            # Parse Date range
+            if row[0] == "Date range" and len(row) > 1:
+                out["range"] = row[1]
+            
+            # Parse Metric headers
+            elif row[0] == "Metric" and len(row) > 1:
+                cur_metric = row[1]
+                out["sections"][cur_metric] = []
+            
+            # Parse metric data rows (first column is empty)
+            elif row and row[0] == "" and cur_metric and len(row) > 1:
+                out["sections"][cur_metric].append(row[1:])
+    
     return out
 
-# Find Clarity CSV files dynamically
+# Find Clarity CSV files
 clarity_files = sorted(glob.glob("data/clarity*.csv"), reverse=True)
+
 if not clarity_files:
-    print("⚠ No Clarity CSV files found in data/. Using empty health.json.")
+    print("⚠ No Clarity CSV files found. Using empty health.json.")
     d90, d3 = {"sections": {}, "range": "N/A"}, {"sections": {}, "range": "N/A"}
 else:
     d90 = parse(clarity_files[0])
@@ -31,15 +41,17 @@ else:
         print(f"  Loaded: {os.path.basename(clarity_files[1])}")
 
 def g(d, sec, key, i=1):
+    """Get metric value from sections."""
     for r in d["sections"].get(sec, []):
-        if r[0].lower() == key.lower():
-            return r[i]
+        if r and r[0].lower() == key.lower():
+            return r[i] if len(r) > i else None
     return None
 
 def pct(d, sec, key):
+    """Get metric with percentage."""
     for r in d["sections"].get(sec, []):
-        if r[0].lower() == key.lower():
-            return {"n": r[1], "p": r[2] if len(r) > 2 else ""}
+        if r and r[0].lower() == key.lower():
+            return {"n": r[1] if len(r) > 1 else "-", "p": r[2] if len(r) > 2 else ""}
     return {"n": "-", "p": ""}
 
 health = {
@@ -54,20 +66,15 @@ health = {
         {"k": k, "long": pct(d90, "Insights", k), "short": pct(d3, "Insights", k)}
         for k in ["Rage clicks", "Dead click", "Quick back click", "Excessive scrolling"]
     ],
-    "events": [
-        {"k": r[0], "n": r[1], "p": r[2] if len(r) > 2 else ""}
-        for r in d90["sections"].get("Smart events", [])
-    ],
-    "errors": [
-        {"k": r[0], "n": r[1], "p": r[2] if len(r) > 2 else ""}
-        for r in d90["sections"].get("JavaScript errors", []) if len(r) > 2 and r[1].isdigit()
-    ],
-    "perf": [[r[0], r[1]] for r in d90["sections"].get("Performance overview", [])],
-    "referrers": [[r[0], r[1]] for r in d90["sections"].get("Referrer", [])],
+    "events": [],
+    "errors": [],
+    "perf": [],
+    "referrers": [],
 }
+
 json.dump(health, open(".cache/health.json", "w"), indent=1)
 if clarity_files:
     print(json.dumps({k: health[k] for k in ["scroll", "active", "pps", "sessions", "bots"]}, indent=1))
-    print("errors", len(health["errors"]), "| events", len(health["events"]), "| perf", health["perf"])
+    print("friction", len(health["friction"]))
 else:
     print("✓ Empty health.json written")
