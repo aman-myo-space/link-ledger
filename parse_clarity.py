@@ -18,7 +18,7 @@ def parse(path):
     return out
 
 # Find Clarity CSV files dynamically
-clarity_files = sorted(glob.glob("data/Clarity*.csv"), reverse=True)
+clarity_files = sorted(glob.glob("data/clarity*.csv"), reverse=True)
 if not clarity_files:
     print("⚠ No Clarity CSV files found in data/. Using empty health.json.")
     d90, d3 = {"sections": {}, "range": "N/A"}, {"sections": {}, "range": "N/A"}
