@@ -1,0 +1,97 @@
+Project name	MyOperator		
+Date range	09/19/2026 12:00 AM - 09/21/2026 11:59 PM		
+			
+			
+Visited URL contains	https://myoperator.com/blog/		
+			
+Metric	Sessions		
+	Total sessions	5872	
+	Bot sessions	85949	
+			
+Metric	Pages per session		
+	Average	1.026907357	
+			
+Metric	Scroll depth		
+	Average	28.1	
+			
+Metric	Active time spent		
+	Active time	17	
+	Total time	25	
+			
+Metric	Users overview		
+	Unique users	5842	
+	Sessions with new users	5844	
+	Sessions with returning users	28	
+			
+Metric	Insights	No. of sessions	% of sessions
+	Rage clicks	4	0.07%
+	Dead click	20	0.34%
+	Excessive scrolling	0	0%
+	Quick back click	19	0.32%
+			
+Metric	Browsers	No. of sessions	% of sessions
+	Chrome	5681	96.75%
+	ChromeMobile	141	2.40%
+	Edge	24	0.41%
+	MobileSafari	16	0.27%
+	GoogleApp	5	0.09%
+	Safari	2	0.03%
+	Firefox	2	0.03%
+	SamsungInternet	1	0.02%
+			
+Metric	Top pages	No. of sessions	
+	https://myoperator.com/blog/complete-guide-for-toll-free-number	52	
+	https://myoperator.com/blog/whatsapp-business-api-pricing-india-2026	51	
+	https://myoperator.com/blog/what-is-cloud-telephony	43	
+	https://myoperator.com/blog/what-is-voip-how-startups-are-scaling-big-with-this-technology	41	
+	https://myoperator.com/blog/top-10-voice-ai-agents-india-2026	38	
+	https://myoperator.com/blog/whatsapp-for-customer-service	38	
+	https://myoperator.com/blog/myoperator-associates-mann-ki-baat-single-phone-call-express-thoughts	34	
+	https://myoperator.com/blog/types-of-toll-free-numbers	34	
+	https://myoperator.com/blog/call-forwarding-vs-call-transfer	29	
+	https://myoperator.com/blog/guide-on-how-to-get-a-tollfree-number	29	
+	https://myoperator.com/blog/small-businesses-scaling-up-with-cloud-telephony	29	
+	https://myoperator.com/blog/how-to-create-whatsapp-chatbot	28	
+			
+Metric	Smart events	No. of sessions	% of sessions
+	Outbound click	13	0.22%
+	Contact us	11	0.19%
+	Login	5	0.09%
+	Book	2	0.03%
+	Sign up	1	0.02%
+			
+Metric	Referrer	No. of sessions	
+	www.google.com	192	
+	myoperator.com	39	
+	com.google.android.googlequicksearchbox	21	
+	www.bing.com	15	
+	in.app.myoperator.com	2	
+	com.linkedin.android	1	
+	console.cloud.tencent.com	1	
+	enewspaper.freep.com	1	
+	fillcom.in	1	
+	pagesense.zoho.in	1	
+	signup.myoperator.com	1	
+	www.google.co.in	1	
+			
+Metric	JavaScript errors		
+	Sessions with JavaScript errors		
+	 total JavaScript errors	17	
+		No. of sessions	% of sessions
+	cannot read properties of null (reading 'classlist')	12	70.59%
+	maximum call stack size exceeded.	5	29.41%
+			
+Metric	Performance overview		
+	Score	83.49295775	
+	LCP (Largest Contentful Paint)	2.62s	
+	INP (Interaction to Next Paint)	224ms	
+	CLS (Cumulative Layout Shift)	0.0075s	
+			
+Metric	Bot traffic		
+webScraperBotSessions	389		
+suspiciousDeviceBotSessions	81600		
+suspiciousNetworkBotSessions	354		
+suspiciousInteractionBotSessions	85948		
+ppcAdFraudBotSessions	1		
+otherBotsSessions	0		
+__typename	BotTypes		
