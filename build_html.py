@@ -60,14 +60,9 @@ a{color:var(--acc);text-decoration:none}a:hover{text-decoration:underline}
   <div class="tab" data-p="pairs">Link opportunities</div>
   <div class="tab" data-p="clusters">Topics</div>
   <div class="tab" data-p="graph">Graph</div>
-  <div class="tab" data-p="broken">Broken links</div>
-  <div class="tab" data-p="dead">404s</div>
-  <div class="tab" data-p="health">Reader behaviour</div>
 </div>
 <div class="pane on" id="p-orphans"></div><div class="pane" id="p-pairs"></div>
 <div class="pane" id="p-clusters"></div><div class="pane" id="p-graph"></div>
-<div class="pane" id="p-broken"></div><div class="pane" id="p-dead"></div>
-<div class="pane" id="p-health"></div>
 <div class="tip" id="tip"></div>
 
 <script>
@@ -81,8 +76,6 @@ document.getElementById('kpis').innerHTML = [
  ['Blogs', fmt(T.blogs), ''],
  ['Orphans', fmt(T.orphans), 'bad'],
  ['Internal links', fmt(T.edges), ''],
- ['Broken links', fmt(T.broken_link_instances), 'bad'],
- ['404s ranking', fmt(T.dead_urls), 'bad'],
  ['Scroll depth', H.scroll.long+'%', 'warn']
 ].map(([l,v,c])=>`<div class="kpi"><div class="v ${c}">${v}</div><div class="l">${l}</div></div>`).join('');
 
