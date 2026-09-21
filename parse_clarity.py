@@ -2,7 +2,7 @@ import csv, json, re, io
 
 def parse(path):
     raw = open(path, encoding="utf-8-sig").read()
-    rows = list(csv.reader(io.StringIO(raw)))
+    rows = list(csv.reader(io.StringIO(raw), delimiter='\t'))
     out, cur = {"sections": {}}, None
     for r in rows:
         r = [c.strip() for c in r]
