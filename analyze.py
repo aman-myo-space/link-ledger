@@ -14,7 +14,7 @@ print(f"  {len(blogs_list)} published blogs loaded")
 print("Loading GSC metrics from data/Pages.csv...")
 gsc = {}
 with open("data/Pages.csv", newline='', encoding='utf-8') as f:
-    reader = csv.DictReader(f)  # Auto-detect delimiter
+    reader = csv.DictReader(f, delimiter='\t')  # Tab-delimited
     for row in reader:
         url = row.get('Top pages', '').strip()
         if url and '/blog/' in url:
