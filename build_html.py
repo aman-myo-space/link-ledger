@@ -230,5 +230,5 @@ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
 
 out = HTML.replace("__PAYLOAD__", json.dumps(d, separators=(",", ":"))) \
           .replace("__HEALTH__", json.dumps(h, separators=(",", ":")))
-open("site/link-ledger.html", "w").write(out)
+open("site/index.html", "w").write(out)
 print("written", round(len(out) / 1024), "kb")
