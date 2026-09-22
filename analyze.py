@@ -65,7 +65,24 @@ print(f"  {len(gsc)} GSC URLs matched")
 # number is never mistaken for today's. A blog with no value in ANY pull
 # on record is "no data", never "0%".
 def scroll_from_pull(pull_data):
-    """(canon URL -> session-weighted average scroll depth) for one pull's data."""
+    """(canon URL -> session-weighted average scroll depth) for one pull's data.
+
+    Verified against the real 2026-09-22 pull: wherever a ScrollDepth entry's
+    exact URL also has a Traffic row we can check, averageScrollDepth == 100
+    corresponds to totalSessionCount == 1 every single time (6/6 checked).
+    A single-session average is degenerate by construction (one visitor
+    either hit the bottom or didn't), not a real reading of typical
+    behaviour -- this is what caused values here to disagree with Clarity's
+    own dashboard, which almost certainly applies its own minimum-sample
+    floor before displaying a number.
+    Fix is targeted, not a blanket confidence filter: requiring positive
+    Traffic corroboration for *every* entry collapses coverage from 360 to
+    53 blogs, because ScrollDepth's and Traffic's top-1000 rows are capped
+    independently and barely overlap -- most entries simply have no
+    Traffic row to check, which is not itself evidence of a bad reading.
+    So only the proven failure mode is excluded: an exact 100 with fewer
+    than 3 corroborated sessions. Everything else is kept as before.
+    """
     scroll_block = next((b["information"] for b in pull_data if b.get("metricName") == "ScrollDepth"), [])
     traffic_by_raw_url = {e["Url"]: e for e in next((b["information"] for b in pull_data if b.get("metricName") == "Traffic"), []) if e.get("Url")}
 
@@ -78,6 +95,8 @@ def scroll_from_pull(pull_data):
         if not canon or "/blog/" not in canon or depth is None:
             continue
         sessions = traffic_by_raw_url.get(raw_url, {}).get("totalSessionCount", 0) or 0
+        if depth == 100 and sessions < 3:
+            continue  # proven single-session artifact pattern -- discard, don't average in
         unweighted[canon].append(depth)
         if sessions > 0:
             weighted[canon][0] += depth * sessions
