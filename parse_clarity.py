@@ -61,6 +61,17 @@ def get_metric(data, metric_name, field_name):
             return item["value"]
     return None
 
+def get_pct(data, metric_name, field_name):
+    """Get metric row's pct field (e.g. "5.23%" for an Insights row like
+    Dead click). parse() already captures this into every row -- it was
+    just never read back out, so friction rows always showed "p": None."""
+    if metric_name not in data:
+        return None
+    for item in data[metric_name]:
+        if item["name"] == field_name:
+            return item.get("pct")
+    return None
+
 # Build health output
 health = {
     "ranges": {
@@ -94,23 +105,23 @@ health = {
     "friction": [
         {
             "k": "Rage clicks",
-            "long": {"n": get_metric(d90, "Insights", "Rage clicks"), "p": None},
-            "short": {"n": get_metric(d3, "Insights", "Rage clicks") if d3 else None, "p": None}
+            "long": {"n": get_metric(d90, "Insights", "Rage clicks"), "p": get_pct(d90, "Insights", "Rage clicks")},
+            "short": {"n": get_metric(d3, "Insights", "Rage clicks") if d3 else None, "p": get_pct(d3, "Insights", "Rage clicks") if d3 else None}
         },
         {
             "k": "Dead click",
-            "long": {"n": get_metric(d90, "Insights", "Dead click"), "p": None},
-            "short": {"n": get_metric(d3, "Insights", "Dead click") if d3 else None, "p": None}
+            "long": {"n": get_metric(d90, "Insights", "Dead click"), "p": get_pct(d90, "Insights", "Dead click")},
+            "short": {"n": get_metric(d3, "Insights", "Dead click") if d3 else None, "p": get_pct(d3, "Insights", "Dead click") if d3 else None}
         },
         {
             "k": "Quick back click",
-            "long": {"n": get_metric(d90, "Insights", "Quick back click"), "p": None},
-            "short": {"n": get_metric(d3, "Insights", "Quick back click") if d3 else None, "p": None}
+            "long": {"n": get_metric(d90, "Insights", "Quick back click"), "p": get_pct(d90, "Insights", "Quick back click")},
+            "short": {"n": get_metric(d3, "Insights", "Quick back click") if d3 else None, "p": get_pct(d3, "Insights", "Quick back click") if d3 else None}
         },
         {
             "k": "Excessive scrolling",
-            "long": {"n": get_metric(d90, "Insights", "Excessive scrolling"), "p": None},
-            "short": {"n": get_metric(d3, "Insights", "Excessive scrolling") if d3 else None, "p": None}
+            "long": {"n": get_metric(d90, "Insights", "Excessive scrolling"), "p": get_pct(d90, "Insights", "Excessive scrolling")},
+            "short": {"n": get_metric(d3, "Insights", "Excessive scrolling") if d3 else None, "p": get_pct(d3, "Insights", "Excessive scrolling") if d3 else None}
         }
     ],
     "events": [],
