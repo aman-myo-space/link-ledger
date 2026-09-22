@@ -39,19 +39,18 @@ data = resp.json()
 # --- First-run verification (CLAUDE.md is explicit this must be checked,
 # not assumed): does breaking down by URL actually return scroll depth per
 # page? The public docs list dimensions and metrics separately with no
-# worked URL example. This parsing is a best guess at Clarity's documented
-# response shape (a list of {"metricName", "information": [...]} entries) --
-# treat the printed output below as the ground truth on the first real run,
-# and fix this block to match if the shape differs.
+# worked URL example. Confirmed on the first real run (2026-09-22): yes --
+# each ScrollDepth entry has a "Url" field (mixed case, not "URL"), e.g.
+# {"averageScrollDepth": 15.51, "Url": "https://myoperator.com/..."}.
 has_per_url_scroll = False
 sample_urls = []
 if isinstance(data, list):
     for row in data:
         if isinstance(row, dict) and row.get("metricName", "").lower() == "scrolldepth":
             for entry in row.get("information", []):
-                if isinstance(entry, dict) and entry.get("URL"):
+                if isinstance(entry, dict) and entry.get("Url"):
                     has_per_url_scroll = True
-                    sample_urls.append(entry["URL"])
+                    sample_urls.append(entry["Url"])
     print(f"response has {len(data)} metric block(s): {[r.get('metricName') for r in data if isinstance(r, dict)]}")
 else:
     print("WARNING: response is not a list of metric blocks -- inspect the raw payload below.")
