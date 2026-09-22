@@ -1,8 +1,25 @@
 import json, csv, collections, numpy as np
 from datetime import datetime
+from urllib.parse import urlparse, urldefrag
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from buckets import classify, PARENT_COLOUR, PARENT_ORDER
+
+
+def norm(u):
+    """Canonicalise a URL/path the same way for blog URLs and link targets:
+    scheme-agnostic, no fragment, no trailing slash. Without this, a link
+    written as http:// (rather than https://) or with a trailing slash
+    never matches a known blog's canon URL, so it gets miscounted as a
+    broken/static link instead of a real internal edge."""
+    if u.startswith('/'):
+        u = f"https://myoperator.com{u}"
+    u = urldefrag(u)[0]
+    p = urlparse(u)
+    if p.netloc.replace('www.', '') != 'myoperator.com':
+        return None
+    return "https://myoperator.com" + (p.path.rstrip('/') or '/')
+
 
 # --- Load blogs from Webflow CSV export (via blogs.json) ---
 print("Loading blogs from data/blogs.json...")
@@ -16,7 +33,7 @@ gsc = {}
 with open("data/Pages.csv", newline='', encoding='utf-8') as f:
     reader = csv.DictReader(f, delimiter='\t')  # Tab-delimited
     for row in reader:
-        url = row.get('Top pages', '').strip()
+        url = norm(row.get('Top pages', '').strip())
         if url and '/blog/' in url:
             ctr_str = row.get('CTR', '0').rstrip('%').strip()
             gsc[url] = {
@@ -32,11 +49,11 @@ print(f"  {len(gsc)} GSC URLs matched")
 ok = []
 for b in blogs_list:
     page = {
-        'canon': b['url'],
+        'canon': norm(b['url']),
         'title': b['title'],
         'h2s': b['h2_headings'],
         'text': ' '.join(b['h2_headings']),  # Minimal text for TF-IDF
-        'outlinks': [{'to': link, 'anchor': ''} for link in b['internal_links']],  # No anchors in CSV export
+        'outlinks': [{'to': t, 'anchor': ''} for link in b['internal_links'] if (t := norm(link))],
         'words': b['word_count'],
         'in_gsc': False,
         'in_sitemap': True,  # Assume all Webflow CMS items are in sitemap
@@ -59,16 +76,24 @@ in_blog, in_static = collections.defaultdict(set), collections.defaultdict(set)
 edges = []
 out_blog, out_static, out_dead = collections.Counter(), collections.Counter(), collections.Counter()
 
-dead = set()  # No dead URLs yet (no probes)
+# There's no live crawl in this pipeline any more (content comes from the
+# Webflow export), so we can't HTTP-probe a link target to see if it 404s.
+# The next best signal available: any /blog/ link that doesn't point at a
+# currently-published blog in data/blogs.json is broken (unpublished or
+# deleted). This is inferred from Webflow's publish state, not a live
+# status code, so it can miss soft-404s or catch a page mid-republish.
+known_blog_urls = set(bidx)
+broken_targets = sorted({
+    l['to'] for p in ok for l in p['outlinks']
+    if '/blog/' in l['to'] and l['to'] not in known_blog_urls
+})
+dead = set(broken_targets)
 
 for p in ok:
     src, is_blog = p['canon'], True  # All are blogs
     seen = set()
     for l in p['outlinks']:
         t = l['to']
-        # Convert path to full URL if needed
-        if t.startswith('/'):
-            t = f"https://myoperator.com{t}"
         if t == src or t in seen:
             continue
         seen.add(t)
@@ -80,6 +105,14 @@ for p in ok:
             out_blog[src] += 1
         elif t not in dead:
             out_static[src] += 1
+
+# Same idea for the 404s tab: a GSC URL that still earns impressions but
+# isn't among the currently-published blogs is a page that's gone but
+# still ranking.
+dead_ranking = sorted(
+    url for url, g in gsc.items()
+    if url not in known_blog_urls and g.get('impressions', 0) > 0
+)
 
 print(f"  {len(edges)} blog-to-blog internal links found")
 
@@ -167,13 +200,13 @@ for pn in PARENT_ORDER:
 # --- Output snapshot ---
 out = {'generated': datetime.now().isoformat(), 'parents': parents, 'nodes': nodes, 'edges': edges,
        'clusters': sorted(cl, key=lambda x: (PARENT_ORDER.index(x['parent']), -x['clicks'])), 'pairs': uniq[:250],
-       'dead': [], 'broken_targets': [],
+       'dead': dead_ranking, 'broken_targets': broken_targets,
        'totals': {'blogs': len(blogs), 'static': 0, 'edges': len(edges),
                   'orphans': sum(1 for n in nodes if n['inbound'] == 0),
                   'orphans_blogonly': sum(1 for n in nodes if n['inbound_blog'] == 0),
                   'clicks': sum(n['clicks'] for n in nodes),
-                  'dead_urls': 0, 'broken_links': 0,
-                  'broken_link_instances': 0}}
+                  'dead_urls': len(dead_ranking), 'broken_links': len(broken_targets),
+                  'broken_link_instances': sum(out_dead.values())}}
 
 json.dump(out, open('.cache/snapshot.json', 'w'))
 

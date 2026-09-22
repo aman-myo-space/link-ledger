@@ -3,7 +3,11 @@ import csv, json, os, glob
 def parse(path):
     """Parse Clarity CSV export with quoted fields."""
     with open(path, encoding='utf-8-sig') as f:
-        reader = csv.reader(f)
+        # Clarity's export is tab-delimited despite the .csv extension; the
+        # default comma delimiter here made every row a single unsplit
+        # field, so "Date range"/"Metric" never matched and every lookup
+        # (including scroll depth) silently returned None.
+        reader = csv.reader(f, delimiter='\t')
         out = {"sections": {}, "range": "N/A"}
         cur_metric = None
         
