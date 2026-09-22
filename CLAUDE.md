@@ -78,17 +78,27 @@ A second pass probes every link target that falls outside the crawl universe. **
 ### 3. Changes tab
 `build_html.py` renders the diff as a tab. Merge `add_health.py` into `build_html.py` rather than keeping it as a post-processing step.
 
-### 4. Clarity daily pull
+### 4. Clarity daily pull — DONE
+`pull_clarity.py` calls:
 ```
 GET https://www.clarity.ms/export-data/api/v1/project-live-insights
     ?numOfDays=3&dimension1=URL
 Authorization: Bearer $CLARITY_TOKEN
 ```
-Token goes in an environment variable, never in a file. Append each response to `clarity/YYYY-MM-DD.json`.
+Token is read from the `CLARITY_TOKEN` environment variable (a GitHub Actions
+secret in production), never from a file. Each response is appended to
+`clarity/YYYY-MM-DD.json`. Runs on `.github/workflows/clarity-pull.yml`, 3x/day
+(~8h apart), well under the 10-requests-per-project-per-day cap.
 
-**Verify on first run** that breaking down by `URL` actually returns scroll depth per page. The docs list dimensions and metrics separately and do not show a worked URL example. If per-URL scroll depth does return, join it to the snapshot on slug and add a Scroll tab flagging blogs with high impressions and low scroll depth. If it does not, the Clarity leg stays at the site-aggregate level and that limitation should be stated plainly rather than worked around.
-
-Budget one call per day out of the ten allowed.
+**Not yet verified**: whether breaking down by `URL` actually returns scroll
+depth per page. The docs list dimensions and metrics separately and do not
+show a worked URL example. `pull_clarity.py` checks this on every run and
+prints `per-URL scroll depth present: true/false` — read that line on the
+first real run in the Action logs. If true, join it to the snapshot on slug
+and add a Scroll tab flagging blogs with high impressions and low scroll
+depth. If false, the Clarity leg stays at the site-aggregate level (as it is
+today) and that limitation should be stated plainly rather than worked
+around — do not build the per-blog join until this is confirmed.
 
 ## Bugs already found and fixed — do not reintroduce
 

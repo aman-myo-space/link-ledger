@@ -1,0 +1,45 @@
+name: Clarity live pull
+
+on:
+  schedule:
+    # 3x/day, ~8h apart, well under the API's 10-requests-per-project cap
+    - cron: "0 3 * * *"
+    - cron: "0 11 * * *"
+    - cron: "0 19 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  pull:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Pull Clarity data
+        env:
+          CLARITY_TOKEN: ${{ secrets.CLARITY_TOKEN }}
+        run: python3 pull_clarity.py
+
+      - name: Commit Clarity data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add clarity/
+          if git diff --staged --quiet; then
+            echo "No new Clarity data to commit."
+          else
+            DATE=$(date -u +%Y-%m-%d)
+            git commit -m "clarity pull $DATE" -m "[skip ci]"
+            git push
+          fi
