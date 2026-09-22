@@ -33,6 +33,8 @@ h3{font-size:13.5px;margin:22px 0 8px;font-weight:600}
 table{border-collapse:collapse;width:100%;font-size:12.5px;min-width:560px}
 th{text-align:left;padding:9px 12px;color:var(--mut);font-weight:550;font-size:11px;text-transform:uppercase;
  letter-spacing:.4px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel2)}
+th.sortable{cursor:pointer;user-select:none}th.sortable:hover{color:var(--fg)}
+.sort-ind{display:inline-block;width:10px}
 td{padding:9px 12px;border-bottom:1px solid var(--line)}
 tr:last-child td{border-bottom:none}tr:hover td{background:var(--panel2)}
 tr.grp td{background:var(--panel2);font-weight:620}
@@ -82,30 +84,71 @@ document.getElementById('kpis').innerHTML = [
  ['Scroll depth', H.scroll.long==null?'no data':H.scroll.long+'%', 'warn']
 ].map(([l,v,c])=>`<div class="kpi"><div class="v ${c}">${v}</div><div class="l">${l}</div></div>`).join('');
 
-function table(cols, rows){
-  return '<div class="wrap"><table><thead><tr>'+cols.map(c=>`<th class="${c.n?'num':''}">${c.t}</th>`).join('')+
-  '</tr></thead><tbody>'+rows.map(r=>{
+function rowsHtml(cols, rows){
+  return rows.map(r=>{
     const cls = r.__grp?' class="grp"':'';
     return `<tr${cls}>`+r.map((c,i)=>`<td class="${cols[i].n?'num':''}">${c}</td>`).join('')+'</tr>';
-  }).join('')+'</tbody></table></div>';
+  }).join('');
+}
+function table(cols, rows, id){
+  const thead = cols.map((c,i)=>{
+    const sortable = id && c.n;
+    return `<th class="${c.n?'num':''}${sortable?' sortable':''}"${sortable?` data-col="${i}"`:''}>${c.t}${sortable?'<span class="sort-ind"></span>':''}</th>`;
+  }).join('');
+  return `<div class="wrap"><table${id?` id="${id}"`:''}><thead><tr>${thead}</tr></thead><tbody>${rowsHtml(cols, rows)}</tbody></table></div>`;
+}
+// Click a sortable column header: highest-to-lowest, click again for
+// lowest-to-highest, click again to return to the original order.
+// Switching to a different column resets to highest-to-lowest.
+function wireSort(id, cols, rows){
+  const tbl = document.getElementById(id);
+  if(!tbl) return;
+  const tbody = tbl.querySelector('tbody');
+  const original = rows.slice();
+  let state = {col: null, dir: 0};
+  const numOf = html => {
+    const n = parseFloat(String(html).replace(/<[^>]+>/g,'').replace(/[^0-9.\-]/g,''));
+    return isNaN(n) ? -Infinity : n;
+  };
+  tbl.querySelectorAll('th.sortable').forEach(th=>{
+    th.addEventListener('click', ()=>{
+      const col = +th.dataset.col;
+      state = (state.col !== col) ? {col, dir: 1} : {col, dir: state.dir===1?-1:(state.dir===-1?0:1)};
+      tbl.querySelectorAll('th.sortable .sort-ind').forEach(s=>s.textContent='');
+      if(state.dir === 0){
+        tbody.innerHTML = rowsHtml(cols, original);
+      } else {
+        const sorted = original.slice().sort((a,b)=>{
+          const av = numOf(a[col]), bv = numOf(b[col]);
+          return state.dir===1 ? bv-av : av-bv;
+        });
+        th.querySelector('.sort-ind').textContent = state.dir===1 ? ' ▼' : ' ▲';
+        tbody.innerHTML = rowsHtml(cols, sorted);
+      }
+    });
+  });
 }
 
 // ORPHANS
 const orph = D.nodes.filter(n=>n.inbound===0).sort((a,b)=>b.impr-a.impr);
+const orphCols = [{t:'Blog'},{t:'Topic'},{t:'Clicks',n:1},{t:'Impressions',n:1},{t:'CTR',n:1},{t:'Position',n:1},{t:'Links out',n:1}];
+const orphRows = orph.map(n=>[`<a href="${n.id}" target="_blank">${short(n.id)}</a>`,
+   `<span class="dot" style="background:${n.colour}"></span>${n.sub}`,
+   fmt(n.clicks), fmt(n.impr), n.ctr+'%', n.pos, n.outbound_blog]);
 document.getElementById('p-orphans').innerHTML =
  `<p class="note">Blogs that nothing else on the site links to. Start at the top: these already get search traffic.</p>`+
- table([{t:'Blog'},{t:'Topic'},{t:'Clicks',n:1},{t:'Impressions',n:1},{t:'CTR',n:1},{t:'Position',n:1},{t:'Links out',n:1}],
-  orph.map(n=>[`<a href="${n.id}" target="_blank">${short(n.id)}</a>`,
-   `<span class="dot" style="background:${n.colour}"></span>${n.sub}`,
-   fmt(n.clicks), fmt(n.impr), n.ctr+'%', n.pos, n.outbound_blog]));
+ table(orphCols, orphRows, 't-orphans');
+wireSort('t-orphans', orphCols, orphRows);
 
 // PAIRS
+const pairCols = [{t:'Add a link from'},{t:'Pointing to'},{t:'Match',n:1},{t:'Clicks it has',n:1},{t:'Links it has',n:1}];
+const pairRows = D.pairs.slice(0,150).map(p=>[`<a href="${p.from}" target="_blank">${short(p.from)}</a>`,
+   `<a href="${p.to}" target="_blank">${short(p.to)}</a>`, Math.round(p.sim*100)+'%', fmt(p.from_clicks),
+   p.to_inbound===0?'<span class="bad">0</span>':p.to_inbound]);
 document.getElementById('p-pairs').innerHTML =
  `<p class="note">Blogs covering the same topic that don't link to each other. Add a link from the left column to the right.</p>`+
- table([{t:'Add a link from'},{t:'Pointing to'},{t:'Match',n:1},{t:'Clicks it has',n:1},{t:'Links it has',n:1}],
-  D.pairs.slice(0,150).map(p=>[`<a href="${p.from}" target="_blank">${short(p.from)}</a>`,
-   `<a href="${p.to}" target="_blank">${short(p.to)}</a>`, Math.round(p.sim*100)+'%', fmt(p.from_clicks),
-   p.to_inbound===0?'<span class="bad">0</span>':p.to_inbound]));
+ table(pairCols, pairRows, 't-pairs');
+wireSort('t-pairs', pairCols, pairRows);
 
 // CLUSTERS
 const crows = [];
@@ -143,17 +186,19 @@ const withScroll = D.nodes.filter(n=>n.scroll!=null);
 const noScroll = D.nodes.filter(n=>n.scroll==null && n.impr>0);
 const priority = withScroll.filter(n=>n.impr>0).sort((a,b)=>b.impr-a.impr || a.scroll-b.scroll);
 const latestPull = D.nodes.reduce((max,n)=>n.scroll_as_of>max?n.scroll_as_of:max, '');
-document.getElementById('p-scroll').innerHTML =
- `<p class="note">Reader experience, driven by real metrics: high impressions with low scroll depth means the click works but the page doesn't hold readers.</p>`+
- table([{t:'Blog'},{t:'Topic'},{t:'Impressions',n:1},{t:'Clicks',n:1},{t:'Scroll depth',n:1},{t:'As of'}],
-  priority.map(n=>[`<a href="${n.id}" target="_blank">${short(n.id)}</a>`,
+const scrollCols = [{t:'Blog'},{t:'Topic'},{t:'Impressions',n:1},{t:'Clicks',n:1},{t:'Scroll depth',n:1},{t:'As of'}];
+const scrollRows = priority.map(n=>[`<a href="${n.id}" target="_blank">${short(n.id)}</a>`,
    `<span class="dot" style="background:${n.colour}"></span>${n.sub}`,
    fmt(n.impr), fmt(n.clicks),
    `<span class="${n.scroll<30?'bad':n.scroll<50?'warn':'good'}">${n.scroll}%</span>`,
-   n.scroll_as_of===latestPull?n.scroll_as_of:`<span class="warn">${n.scroll_as_of}</span>`]))+
+   n.scroll_as_of===latestPull?n.scroll_as_of:`<span class="warn">${n.scroll_as_of}</span>`]);
+document.getElementById('p-scroll').innerHTML =
+ `<p class="note">Reader experience, driven by real metrics: high impressions with low scroll depth means the click works but the page doesn't hold readers.</p>`+
+ table(scrollCols, scrollRows, 't-scroll')+
  `<h3>No scroll data in any pull on record (${fmt(noScroll.length)} blogs with impressions)</h3>`+
  table([{t:'Blog'},{t:'Impressions',n:1}],
   noScroll.sort((a,b)=>b.impr-a.impr).slice(0,50).map(n=>[`<a href="${n.id}" target="_blank">${short(n.id)}</a>`, fmt(n.impr)]));
+wireSort('t-scroll', scrollCols, scrollRows);
 
 // GRAPH
 document.getElementById('p-graph').innerHTML =
