@@ -163,16 +163,19 @@ out_blog, out_static, out_dead = collections.Counter(), collections.Counter(), c
 
 # There's no live crawl in this pipeline any more (content comes from the
 # Webflow export), so we can't HTTP-probe a link target to see if it 404s.
-# The next best signal available: any /blog/ link that doesn't point at a
-# currently-published blog in data/blogs.json is broken (unpublished or
-# deleted). This is inferred from Webflow's publish state, not a live
-# status code, so it can miss soft-404s or catch a page mid-republish.
+# A previous version of this inferred "broken" from absence in
+# data/blogs.json (any /blog/ link not in the published set). Verified
+# against the live site and reverted: most of those flagged links were
+# actually live -- data/blogs.json's export is not a complete or current
+# enough source of truth for "does this page exist" despite its own
+# exported_at/total_available metadata claiming full coverage (578/578).
+# Rather than keep reporting false positives as fact, this stays empty
+# until there's a reliable way to check (a live crawl, or a verified-
+# complete Webflow page list) -- see the Broken links / 404s tabs removed
+# from build_html.py for the same reason.
 known_blog_urls = set(bidx)
-broken_targets = sorted({
-    l['to'] for p in ok for l in p['outlinks']
-    if '/blog/' in l['to'] and l['to'] not in known_blog_urls
-})
-dead = set(broken_targets)
+broken_targets = []
+dead = set()
 
 for p in ok:
     src, is_blog = p['canon'], True  # All are blogs
@@ -191,13 +194,11 @@ for p in ok:
         elif t not in dead:
             out_static[src] += 1
 
-# Same idea for the 404s tab: a GSC URL that still earns impressions but
-# isn't among the currently-published blogs is a page that's gone but
-# still ranking.
-dead_ranking = sorted(
-    url for url, g in gsc.items()
-    if url not in known_blog_urls and g.get('impressions', 0) > 0
-)
+# Same detection method as broken_targets above (absence from
+# data/blogs.json), same false-positive problem, same reason it's empty
+# rather than wrong: a GSC URL not in the published set is not reliable
+# evidence the page is actually gone.
+dead_ranking = []
 
 print(f"  {len(edges)} blog-to-blog internal links found")
 
