@@ -52,8 +52,8 @@ a{color:var(--acc);text-decoration:none}a:hover{text-decoration:underline}
  padding:8px 11px;font-size:11.5px;max-width:270px;opacity:0;z-index:99}
 </style></head><body>
 
-<header><h1>Link Ledger</h1>
-<div class="sub">How the MyOperator blog links together, and what it earns &middot; <span id="date"></span></div></header>
+<header><h1>Blog & Key</h1>
+<div class="sub">A unified layer for MyOperator's blog content, bridging search demand with real reader engagement &middot; <span id="date"></span></div></header>
 <div class="kpis" id="kpis"></div>
 <div class="tabs">
   <div class="tab on" data-p="orphans">Orphans</div>
