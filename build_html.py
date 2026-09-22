@@ -63,11 +63,12 @@ a{color:var(--acc);text-decoration:none}a:hover{text-decoration:underline}
   <div class="tab" data-p="broken">Broken links</div>
   <div class="tab" data-p="dead">404s</div>
   <div class="tab" data-p="health">Reader behaviour</div>
+  <div class="tab" data-p="scroll">Scroll</div>
 </div>
 <div class="pane on" id="p-orphans"></div><div class="pane" id="p-pairs"></div>
 <div class="pane" id="p-clusters"></div><div class="pane" id="p-graph"></div>
 <div class="pane" id="p-broken"></div><div class="pane" id="p-dead"></div>
-<div class="pane" id="p-health"></div>
+<div class="pane" id="p-health"></div><div class="pane" id="p-scroll"></div>
 <div class="tip" id="tip"></div>
 
 <script>
@@ -156,6 +157,22 @@ document.getElementById('p-health').innerHTML =
  <h3>Where readers get stuck</h3>
  <div class="wrap" style="margin-bottom:18px"><table><thead><tr><th>Signal</th><th class="num">Sessions</th><th class="num">Share</th></tr></thead>
  <tbody>${(H.friction||[]).map(f=>`<tr><td>${f.k}</td><td class="num">${f.long.n}</td><td class="num warn">${f.long.p}</td></tr>`).join('')}</tbody></table></div>`;
+
+// SCROLL
+const withScroll = D.nodes.filter(n=>n.scroll!=null);
+const noScroll = D.nodes.filter(n=>n.scroll==null && n.impr>0);
+const priority = withScroll.filter(n=>n.impr>0).sort((a,b)=>b.impr-a.impr || a.scroll-b.scroll);
+document.getElementById('p-scroll').innerHTML =
+ `<p class="note">Scroll depth from Microsoft Clarity (last 3 days, session-weighted across UTM link variants), joined to blogs earning GSC impressions. High impressions with low scroll means the click is working but the page isn't holding readers.
+ Coverage: ${fmt(withScroll.length)} of ${fmt(D.totals.blogs)} blogs have scroll data this pull &mdash; the Clarity API caps each response at 1000 rows with no pagination, so a blog with no data here may genuinely have had no sessions in the window, or may have been crowded out by that cap. Either way it's shown as "no data", never as 0%.</p>`+
+ table([{t:'Blog'},{t:'Topic'},{t:'Impressions',n:1},{t:'Clicks',n:1},{t:'Scroll depth',n:1}],
+  priority.map(n=>[`<a href="${n.id}" target="_blank">${short(n.id)}</a>`,
+   `<span class="dot" style="background:${n.colour}"></span>${n.sub}`,
+   fmt(n.impr), fmt(n.clicks),
+   `<span class="${n.scroll<30?'bad':n.scroll<50?'warn':'good'}">${n.scroll}%</span>`]))+
+ `<h3>No scroll data (${fmt(noScroll.length)} blogs with impressions)</h3>`+
+ table([{t:'Blog'},{t:'Impressions',n:1}],
+  noScroll.sort((a,b)=>b.impr-a.impr).slice(0,50).map(n=>[`<a href="${n.id}" target="_blank">${short(n.id)}</a>`, fmt(n.impr)]));
 
 // GRAPH
 document.getElementById('p-graph').innerHTML =

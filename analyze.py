@@ -1,4 +1,4 @@
-import json, csv, collections, numpy as np
+import glob, json, csv, collections, numpy as np
 from datetime import datetime
 from urllib.parse import urlparse, urldefrag
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -44,6 +44,52 @@ with open("data/Pages.csv", newline='', encoding='utf-8') as f:
                 'in_gsc': True,
             }
 print(f"  {len(gsc)} GSC URLs matched")
+
+# --- Load per-blog scroll depth from the latest Clarity pull, if any ---
+# The API's dimension1=URL breakdown fragments one blog across several
+# UTM-tagged URL variants, each with its own averageScrollDepth. Join each
+# variant's Url 1:1 to the Traffic block's totalSessionCount and take a
+# session-weighted average per blog (falling back to a plain mean if every
+# variant shows 0 sessions, which happens often at this traffic volume).
+#
+# Real limitation, not cosmetic: every metric block in the response is
+# capped at exactly 1000 rows with no pagination cursor, and only ~360 of
+# 578 blogs show up in a given pull. A blog missing from scroll_by_url is
+# NOT the same as "0% scroll" -- it may genuinely have had no sessions in
+# the 3-day window, or it may have been crowded out by the row cap. Both
+# render as "no data", never as 0%.
+scroll_by_url = {}
+clarity_files = sorted(glob.glob("clarity/*.json"))
+if clarity_files:
+    latest_clarity = clarity_files[-1]
+    pulls = json.load(open(latest_clarity))
+    if pulls:
+        latest_pull = pulls[-1]["data"]
+        scroll_block = next((b["information"] for b in latest_pull if b.get("metricName") == "ScrollDepth"), [])
+        traffic_by_raw_url = {e["Url"]: e for e in next((b["information"] for b in latest_pull if b.get("metricName") == "Traffic"), []) if e.get("Url")}
+
+        weighted = collections.defaultdict(lambda: [0.0, 0])  # canon -> [session-weighted sum, total sessions]
+        unweighted = collections.defaultdict(list)  # canon -> [averageScrollDepth, ...] for the zero-session fallback
+        for e in scroll_block:
+            raw_url = e.get("Url")
+            depth = e.get("averageScrollDepth")
+            canon = norm(raw_url) if raw_url else None
+            if not canon or "/blog/" not in canon or depth is None:
+                continue
+            sessions = traffic_by_raw_url.get(raw_url, {}).get("totalSessionCount", 0) or 0
+            unweighted[canon].append(depth)
+            if sessions > 0:
+                weighted[canon][0] += depth * sessions
+                weighted[canon][1] += sessions
+
+        for canon, values in unweighted.items():
+            if canon in weighted and weighted[canon][1] > 0:
+                scroll_by_url[canon] = round(weighted[canon][0] / weighted[canon][1], 1)
+            else:
+                scroll_by_url[canon] = round(sum(values) / len(values), 1)
+    print(f"  Loaded {latest_clarity}: scroll depth for {len(scroll_by_url)} blogs")
+else:
+    print("  No clarity/*.json pulls found -- Scroll tab will show no data for every blog.")
 
 # --- Convert blogs.json to pages dict (mimic crawled format) ---
 ok = []
@@ -172,6 +218,7 @@ for i, p in enumerate(blogs):
         'dead_links': out_dead[u], 'in_gsc': p['in_gsc'], 'in_sitemap': p['in_sitemap'],
         'cluster': int(labels[i]), 'cluster_name': cname[int(labels[i])],
         'parent': buckets[i][0], 'sub': buckets[i][1], 'colour': buckets[i][2],
+        'scroll': scroll_by_url.get(u),
     })
 
 # --- Cluster summaries ---
@@ -206,7 +253,8 @@ out = {'generated': datetime.now().isoformat(), 'parents': parents, 'nodes': nod
                   'orphans_blogonly': sum(1 for n in nodes if n['inbound_blog'] == 0),
                   'clicks': sum(n['clicks'] for n in nodes),
                   'dead_urls': len(dead_ranking), 'broken_links': len(broken_targets),
-                  'broken_link_instances': sum(out_dead.values())}}
+                  'broken_link_instances': sum(out_dead.values()),
+                  'scroll_coverage': sum(1 for n in nodes if n['scroll'] is not None)}}
 
 json.dump(out, open('.cache/snapshot.json', 'w'))
 
