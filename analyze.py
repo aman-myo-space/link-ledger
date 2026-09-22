@@ -28,21 +28,35 @@ blogs_list = blogs_data["blogs"]
 print(f"  {len(blogs_list)} published blogs loaded")
 
 # --- Load GSC data (clicks, impressions, CTR, position) ---
+# Several rows can normalise to the same blog URL (trailing slash, UTM query
+# string variants -- confirmed on the real data: complete-guide-for-toll-
+# free-number has an 895-click row and a 0-click "/...-number/" duplicate).
+# A last-write-wins dict silently zeroes out real traffic whenever the
+# duplicate happens to be read after the real row. Aggregate instead: sum
+# clicks and impressions, weight position by impressions. This is CLAUDE.md
+# bug #3, already documented as fixed once -- reintroduced when analyze.py
+# was rewritten for the Webflow migration.
 print("Loading GSC metrics from data/Pages.csv...")
-gsc = {}
+agg = {}
 with open("data/Pages.csv", newline='', encoding='utf-8') as f:
     reader = csv.DictReader(f, delimiter='\t')  # Tab-delimited
     for row in reader:
         url = norm(row.get('Top pages', '').strip())
-        if url and '/blog/' in url:
-            ctr_str = row.get('CTR', '0').rstrip('%').strip()
-            gsc[url] = {
-                'clicks': int(row.get('Clicks', 0) or 0),
-                'impressions': int(row.get('Impressions', 0) or 0),
-                'ctr': float(ctr_str or 0) / 100,
-                'position': float(row.get('Position', 0) or 0),
-                'in_gsc': True,
-            }
+        if not url or '/blog/' not in url:
+            continue
+        c = int(row.get('Clicks', 0) or 0)
+        i = int(row.get('Impressions', 0) or 0)
+        pos = float(row.get('Position', 0) or 0)
+        a = agg.setdefault(url, {'clicks': 0, 'impressions': 0, 'pos_wt': 0.0})
+        a['clicks'] += c
+        a['impressions'] += i
+        a['pos_wt'] += pos * max(i, 1)
+gsc = {url: {
+    'clicks': a['clicks'], 'impressions': a['impressions'],
+    'ctr': (a['clicks'] / a['impressions']) if a['impressions'] else 0.0,
+    'position': round(a['pos_wt'] / max(a['impressions'], 1), 2),
+    'in_gsc': True,
+} for url, a in agg.items()}
 print(f"  {len(gsc)} GSC URLs matched")
 
 # --- Load per-blog scroll depth from Clarity pulls, newest first ---
