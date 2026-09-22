@@ -162,15 +162,18 @@ document.getElementById('p-health').innerHTML =
 const withScroll = D.nodes.filter(n=>n.scroll!=null);
 const noScroll = D.nodes.filter(n=>n.scroll==null && n.impr>0);
 const priority = withScroll.filter(n=>n.impr>0).sort((a,b)=>b.impr-a.impr || a.scroll-b.scroll);
+const latestPull = D.nodes.reduce((max,n)=>n.scroll_as_of>max?n.scroll_as_of:max, '');
+const stale = withScroll.filter(n=>n.scroll_as_of!==latestPull).length;
 document.getElementById('p-scroll').innerHTML =
  `<p class="note">Scroll depth from Microsoft Clarity (last 3 days, session-weighted across UTM link variants), joined to blogs earning GSC impressions. High impressions with low scroll means the click is working but the page isn't holding readers.
- Coverage: ${fmt(withScroll.length)} of ${fmt(D.totals.blogs)} blogs have scroll data this pull &mdash; the Clarity API caps each response at 1000 rows with no pagination, so a blog with no data here may genuinely have had no sessions in the window, or may have been crowded out by that cap. Either way it's shown as "no data", never as 0%.</p>`+
- table([{t:'Blog'},{t:'Topic'},{t:'Impressions',n:1},{t:'Clicks',n:1},{t:'Scroll depth',n:1}],
+ Coverage: ${fmt(withScroll.length)} of ${fmt(D.totals.blogs)} blogs have scroll data${stale?` (${fmt(stale)} backfilled from a pull before ${latestPull}, dated per row below)`:''}. The Clarity API caps each response at 1000 rows with no pagination, so a blog with no data here may genuinely have had no sessions in any pull on record, or may have been crowded out by that cap. Either way it's "no data", never 0%.</p>`+
+ table([{t:'Blog'},{t:'Topic'},{t:'Impressions',n:1},{t:'Clicks',n:1},{t:'Scroll depth',n:1},{t:'As of'}],
   priority.map(n=>[`<a href="${n.id}" target="_blank">${short(n.id)}</a>`,
    `<span class="dot" style="background:${n.colour}"></span>${n.sub}`,
    fmt(n.impr), fmt(n.clicks),
-   `<span class="${n.scroll<30?'bad':n.scroll<50?'warn':'good'}">${n.scroll}%</span>`]))+
- `<h3>No scroll data (${fmt(noScroll.length)} blogs with impressions)</h3>`+
+   `<span class="${n.scroll<30?'bad':n.scroll<50?'warn':'good'}">${n.scroll}%</span>`,
+   n.scroll_as_of===latestPull?n.scroll_as_of:`<span class="warn">${n.scroll_as_of}</span>`]))+
+ `<h3>No scroll data in any pull on record (${fmt(noScroll.length)} blogs with impressions)</h3>`+
  table([{t:'Blog'},{t:'Impressions',n:1}],
   noScroll.sort((a,b)=>b.impr-a.impr).slice(0,50).map(n=>[`<a href="${n.id}" target="_blank">${short(n.id)}</a>`, fmt(n.impr)]));
 

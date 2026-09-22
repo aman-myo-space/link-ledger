@@ -1,4 +1,4 @@
-import glob, json, csv, collections, numpy as np
+import glob, json, os, csv, collections, numpy as np
 from datetime import datetime
 from urllib.parse import urlparse, urldefrag
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -45,7 +45,7 @@ with open("data/Pages.csv", newline='', encoding='utf-8') as f:
             }
 print(f"  {len(gsc)} GSC URLs matched")
 
-# --- Load per-blog scroll depth from the latest Clarity pull, if any ---
+# --- Load per-blog scroll depth from Clarity pulls, newest first ---
 # The API's dimension1=URL breakdown fragments one blog across several
 # UTM-tagged URL variants, each with its own averageScrollDepth. Join each
 # variant's Url 1:1 to the Traffic block's totalSessionCount and take a
@@ -53,41 +53,61 @@ print(f"  {len(gsc)} GSC URLs matched")
 # variant shows 0 sessions, which happens often at this traffic volume).
 #
 # Real limitation, not cosmetic: every metric block in the response is
-# capped at exactly 1000 rows with no pagination cursor, and only ~360 of
-# 578 blogs show up in a given pull. A blog missing from scroll_by_url is
-# NOT the same as "0% scroll" -- it may genuinely have had no sessions in
-# the 3-day window, or it may have been crowded out by the row cap. Both
-# render as "no data", never as 0%.
-scroll_by_url = {}
-clarity_files = sorted(glob.glob("clarity/*.json"))
+# capped at exactly 1000 rows with no pagination cursor, so only a subset
+# of blogs show up in any single pull (confirmed: ~360 of 578 on the first
+# real pull). Calling the API more often the same day does not get past
+# this -- it's the same rolling 3-day window returning the same top rows,
+# not a paginated quota. What does help: the window shifts and different
+# long-tail URLs surface as separate pulls accumulate in clarity/, so a
+# blog missing from today's pull may appear in yesterday's. We fall back
+# through older pulls (newest first) for any blog still missing, and tag
+# every value with the pull date actually used so a stale backfilled
+# number is never mistaken for today's. A blog with no value in ANY pull
+# on record is "no data", never "0%".
+def scroll_from_pull(pull_data):
+    """(canon URL -> session-weighted average scroll depth) for one pull's data."""
+    scroll_block = next((b["information"] for b in pull_data if b.get("metricName") == "ScrollDepth"), [])
+    traffic_by_raw_url = {e["Url"]: e for e in next((b["information"] for b in pull_data if b.get("metricName") == "Traffic"), []) if e.get("Url")}
+
+    weighted = collections.defaultdict(lambda: [0.0, 0])  # canon -> [session-weighted sum, total sessions]
+    unweighted = collections.defaultdict(list)  # canon -> [averageScrollDepth, ...] for the zero-session fallback
+    for e in scroll_block:
+        raw_url = e.get("Url")
+        depth = e.get("averageScrollDepth")
+        canon = norm(raw_url) if raw_url else None
+        if not canon or "/blog/" not in canon or depth is None:
+            continue
+        sessions = traffic_by_raw_url.get(raw_url, {}).get("totalSessionCount", 0) or 0
+        unweighted[canon].append(depth)
+        if sessions > 0:
+            weighted[canon][0] += depth * sessions
+            weighted[canon][1] += sessions
+
+    result = {}
+    for canon, values in unweighted.items():
+        if canon in weighted and weighted[canon][1] > 0:
+            result[canon] = round(weighted[canon][0] / weighted[canon][1], 1)
+        else:
+            result[canon] = round(sum(values) / len(values), 1)
+    return result
+
+
+scroll_by_url = {}  # canon -> {"scroll": float, "as_of": "YYYY-MM-DD"}
+clarity_files = sorted(glob.glob("clarity/*.json"), reverse=True)  # newest first
+for path in clarity_files:
+    pull_date = os.path.basename(path).removesuffix(".json")
+    pulls = json.load(open(path))
+    if not pulls:
+        continue
+    for canon, scroll in scroll_from_pull(pulls[-1]["data"]).items():
+        if canon not in scroll_by_url:
+            scroll_by_url[canon] = {"scroll": scroll, "as_of": pull_date}
+
 if clarity_files:
-    latest_clarity = clarity_files[-1]
-    pulls = json.load(open(latest_clarity))
-    if pulls:
-        latest_pull = pulls[-1]["data"]
-        scroll_block = next((b["information"] for b in latest_pull if b.get("metricName") == "ScrollDepth"), [])
-        traffic_by_raw_url = {e["Url"]: e for e in next((b["information"] for b in latest_pull if b.get("metricName") == "Traffic"), []) if e.get("Url")}
-
-        weighted = collections.defaultdict(lambda: [0.0, 0])  # canon -> [session-weighted sum, total sessions]
-        unweighted = collections.defaultdict(list)  # canon -> [averageScrollDepth, ...] for the zero-session fallback
-        for e in scroll_block:
-            raw_url = e.get("Url")
-            depth = e.get("averageScrollDepth")
-            canon = norm(raw_url) if raw_url else None
-            if not canon or "/blog/" not in canon or depth is None:
-                continue
-            sessions = traffic_by_raw_url.get(raw_url, {}).get("totalSessionCount", 0) or 0
-            unweighted[canon].append(depth)
-            if sessions > 0:
-                weighted[canon][0] += depth * sessions
-                weighted[canon][1] += sessions
-
-        for canon, values in unweighted.items():
-            if canon in weighted and weighted[canon][1] > 0:
-                scroll_by_url[canon] = round(weighted[canon][0] / weighted[canon][1], 1)
-            else:
-                scroll_by_url[canon] = round(sum(values) / len(values), 1)
-    print(f"  Loaded {latest_clarity}: scroll depth for {len(scroll_by_url)} blogs")
+    latest_date = os.path.basename(clarity_files[0]).removesuffix(".json")
+    stale = sum(1 for v in scroll_by_url.values() if v["as_of"] != latest_date)
+    print(f"  Loaded {len(clarity_files)} pull(s): scroll depth for {len(scroll_by_url)} blogs"
+          + (f" ({stale} backfilled from an older pull)" if stale else ""))
 else:
     print("  No clarity/*.json pulls found -- Scroll tab will show no data for every blog.")
 
@@ -218,7 +238,8 @@ for i, p in enumerate(blogs):
         'dead_links': out_dead[u], 'in_gsc': p['in_gsc'], 'in_sitemap': p['in_sitemap'],
         'cluster': int(labels[i]), 'cluster_name': cname[int(labels[i])],
         'parent': buckets[i][0], 'sub': buckets[i][1], 'colour': buckets[i][2],
-        'scroll': scroll_by_url.get(u),
+        'scroll': scroll_by_url.get(u, {}).get('scroll'),
+        'scroll_as_of': scroll_by_url.get(u, {}).get('as_of'),
     })
 
 # --- Cluster summaries ---
