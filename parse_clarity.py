@@ -5,7 +5,13 @@ def parse(path):
     data = {}
     
     with open(path, encoding='utf-8-sig') as f:
-        reader = csv.reader(f)
+        # Clarity's export is tab-delimited despite the .csv extension.
+        # Without delimiter='\t' every row parses as one unsplit field,
+        # "Project name"/"Date range"/"Metric" never match, and every
+        # value in health.json comes back None -> "no data" on the
+        # dashboard. This exact bug has been reintroduced twice already
+        # by full-file rewrites of this parser; see the assertion below.
+        reader = csv.reader(f, delimiter='\t')
         cur_metric = None
         
         for row in reader:
@@ -113,11 +119,26 @@ health = {
     "referrers": [],
 }
 
-json.dump(health, open(".cache/health.json", "w"), indent=1)
-
-if clarity_files and d90:
+if clarity_files:
+    # Files were found on disk, so every metric below should be a real
+    # value, not None — including the case where the parser silently
+    # extracted *nothing* (d90 == {}), which is just as broken as
+    # extracting Nones and must not be mistaken for the legitimate
+    # "no files found" case below. This is almost always a delimiter
+    # bug: Clarity's export is tab-delimited despite the .csv extension.
+    # Stop here instead of writing (or worse, reporting success on) a
+    # broken health.json.
+    critical = [health["scroll"]["long"], health["sessions"]["long"], health["pps"]["long"]]
+    if not d90 or all(v is None for v in critical):
+        print("✗ ERROR: Clarity CSV(s) found but every metric parsed as None.")
+        print(f"  Checked: {os.path.basename(clarity_files[0])}")
+        print("  parse() must use csv.reader(f, delimiter='\\t'), not the")
+        print("  comma default, or every row parses as one unsplit field.")
+        raise SystemExit(1)
     print(f"✓ Scroll depth: {health['scroll']['long']}%")
     print(f"✓ Sessions: {health['sessions']['long']}")
     print(f"✓ Pages per session: {health['pps']['long']}")
 else:
     print("✓ Empty health.json written")
+
+json.dump(health, open(".cache/health.json", "w"), indent=1)
