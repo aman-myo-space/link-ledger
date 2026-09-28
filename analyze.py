@@ -22,10 +22,17 @@ def norm(u):
 
 
 # --- Load blogs from Webflow CSV export (via blogs.json) ---
+# Drafts and archived items were never filtered here, so CMS placeholder
+# rows (e.g. "imported-item-140", "cta-drafts", duplicate "-copy" pages)
+# were polluting the link graph, orphan counts, and TF-IDF clustering
+# alongside real published content. Confirmed on the 2026-09-28 export:
+# 19 of 21 "new" rows were exactly this kind of draft noise.
 print("Loading blogs from data/blogs.json...")
 blogs_data = json.load(open("data/blogs.json"))
-blogs_list = blogs_data["blogs"]
-print(f"  {len(blogs_list)} published blogs loaded")
+blogs_list_all = blogs_data["blogs"]
+blogs_list = [b for b in blogs_list_all if not b.get("is_draft") and not b.get("is_archived")]
+skipped = len(blogs_list_all) - len(blogs_list)
+print(f"  {len(blogs_list)} published blogs loaded ({skipped} draft/archived rows skipped)")
 
 # --- Load GSC data (clicks, impressions, CTR, position) ---
 # Several rows can normalise to the same blog URL (trailing slash, UTM query
@@ -108,7 +115,15 @@ def scroll_from_pull(pull_data):
         canon = norm(raw_url) if raw_url else None
         if not canon or "/blog/" not in canon or depth is None:
             continue
-        sessions = traffic_by_raw_url.get(raw_url, {}).get("totalSessionCount", 0) or 0
+        # Confirmed on the 2026-09-25 pull: totalSessionCount comes back as a
+        # string ('1') instead of an int on at least one day, inconsistent
+        # with every other pull. Coerce defensively rather than trust the
+        # API's own type consistency across calls.
+        raw_sessions = traffic_by_raw_url.get(raw_url, {}).get("totalSessionCount", 0) or 0
+        try:
+            sessions = int(raw_sessions)
+        except (TypeError, ValueError):
+            sessions = 0
         if depth == 100 and sessions < 3:
             continue  # proven single-session artifact pattern -- discard, don't average in
         unweighted[canon].append(depth)
