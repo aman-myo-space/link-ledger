@@ -1,0 +1,62 @@
+Old Path,New Path,Incoming Links,Type,Notes
+/sign-up,/free-trial,239,CRITICAL,Signup CTA broken on 239 pages
+/signup,/free-trial,26,CRITICAL,Alt signup path
+/sing-up,/free-trial,11,CRITICAL,Typo variant
+/blog/outbound-calling-tips,/blog/outbound-calling-tips-for-sales,11,Slug rename,
+/blog/what-is-sales,/blog/sales-courses,11,Topic match,
+/blog/10-chatgpt-prompts-to-ace-sales-productivity,/blog/driving-customer-engagement-with-chatgpt,11,Topic match,
+/blog/call-center-for-festival-seasons,/blog/festival-marketing-campaigns,10,Topic match,
+/blog/important-follow-up-with-your-customers,/blog/importance-of-follow-up-with-customers,7,Slug rename,
+/blog/customer-interaction,/blog/customer-interactions-product-strategy,7,Slug rename,
+/blog/sales-representative-skills,/blog/customer-service-skills,6,Topic match,
+/blog/the-complete-whatsapp-guide,/blog/the-complete-guide-to-set-up-whatsapp-for-your-business,6,Slug rename,
+/blog/future-of-contact-centers-communication,/blog/cloud-call-center-technology-for-business,5,Topic match,
+/odoo-myoperator-integration,/integrations,5,Product page,Check /integrations exists
+/blog/17-bad-habits-you-should-avoid-this-year-while-handling-customer-calls,/blog/bad-habits-to-avoid-customer-service-calls,4,Slug rename,
+/remarketing,/blog/what-is-remarketing,4,Missing /blog/,
+/blog/traditional-pbx-hostedpbx-infographic,/blog/biggest-problems-with-traditional-pbx-systems,4,Topic match,
+/blog/11-best-practices-to-simplify-your-sales-process-more-than-ever,/blog/a-step-by-step-guide-to-b2b-sales-prospecting,4,Topic match,
+/blog/cloud-telephony,/blog/what-is-cloud-telephony,3,Slug rename,
+/blog/how-to-handle-customer-service,/blog/how-to-handle-angry-customers-on-call,3,Topic match,
+/blog/9-quick-tips-on-how-to-deal-with-angry-customers-on-call,/blog/how-to-handle-angry-customers-on-call,3,Slug rename,
+/blog/work-from-home-stress,/blog/work-from-home-tools-during-coronavirus,3,Topic match,
+/blog/why-every-business-need-bulk-sms,/blog/sms-marketing-the-complete-guide,3,Topic match,
+/blog/whatsapp-marketing-insights-by-myoperator-cmo,/blog/best-practices-for-using-whatsapp-for-business,3,Topic match,
+/live-call-transfer-on-all-your-business-calls,/ai-voicebot-for-calls,3,Product page,
+/blog/call-tracking-guide,/blog/what-is-call-tracking-solution-for-business,2,Slug rename,
+/blog/sales-motivation,/blog/sales-motivation-quotes,2,Slug rename,
+/blog/sales-motivation-tips,/blog/sales-motivation-quotes,2,Topic match,
+/blog/cross-selling-vs-upselling,/blog/sales-follow-up-questions,2,Topic match,
+/blog/productivity-books,/blog/best-sales-books,2,Topic match,
+/blog/whatsapp-login-what-you-need-to-know,/blog/how-to-get-started-with-whatsapp-business,2,Topic match,
+/blog/motivate-and-appreciate-call-center-agents,/blog/sales-motivation-quotes,2,Topic match,
+/intelligent-call-routing,/ai-voicebot-for-calls,2,Product page,
+/zoho-recruit,/integrations,2,Product page,Check /integrations exists
+/blog/one-ai-agent-or-full-ai-team-india-2026,/blog/one-ai-agent-or-full-ai-team-india,1,Slug mismatch,-2026 suffix
+/blog/how-to-set-up-an-ai-receptionist,/blog/how-to-set-up-an-ai-receptionist-for-your-business-in-india,1,Truncated slug,
+/blog/how-to-create-whatsapp-chatbo,/blog/how-to-create-whatsapp-chatbot,1,Truncated URL,Typo
+/blog/the-complete-guide-to-set-up-whatsapp-for-your-busines,/blog/the-complete-guide-to-set-up-whatsapp-for-your-business,1,Truncated URL,Missing final s
+/important-follow-up-with-your-customers,/blog/importance-of-follow-up-with-customers,1,Missing /blog/,
+/blog/ivr-design,/blog/ivr-design-guide,1,Slug rename,
+/17-bad-habits-you-should-avoid-this-year-while-handling-customer-calls,/blog/bad-habits-to-avoid-customer-service-calls,1,Missing /blog/,
+/blog/work-from-home-toolkit-cheatsheet,/blog/work-from-home-tools-during-coronavirus,1,Topic match,
+/start-remarketing-myoperator,/blog/what-is-remarketing,1,Removed page,
+/blog/how-to-create-effective-whatsapp-marketing-campaign,/blog/how-to-create-effective-whatsapp-marketing-campaigns,1,Missing plural s,
+/blog/best-cloud-telephony-service-provider,/blog/cloud-telephony-for-startups,1,Topic match,
+/blog/connecting-virtual-sales-team,/blog/business-remote-working-with-cloud-based-phone-system,1,Topic match,
+/blog/beginners-guide-to-sales-call,/blog/outbound-calling-tips-for-sales,1,Topic match,
+/blog/how-to-use-sms-to-engage-with-customers,/blog/sms-marketing-the-complete-guide,1,Topic match,
+/blog/tips-improve-customer-service-2020,/blog/improve-customer-service,1,Slug rename,
+/blog/ways-to-power-up-your-after-sales-service,/blog/importance-of-follow-up-with-customers,1,Topic match,
+/blog/importance-of-inside-sales-in-saas,/blog/a-step-by-step-guide-to-b2b-sales-prospecting,1,Topic match,
+/blog/how-to-write-sales-emails-19-templates-to-steal-from,/blog/emotions-in-sales,1,Topic match,
+/support-ai-chatbot,/whatsapp-ai-chatbot,1,Product page,
+/finance,/,1,Removed page,
+/mobile-marketing-india,/,1,Removed page,
+/communication-mistakes-smart-people-make,/blog/12-myths-about-business-communication,1,Topic match,
+/blog/8-essential-ways-to-get-customer-feedback-with-less-effort-with-infographic,/blog/how-to-get-maximum-five-star-reviews-from-your-customers,1,Topic match,
+/blog/outbound-dialer-a-step-by-step-guidebook-for-myoperator-users,/blog/meet-myoperators-outbound-dialer-advanced-customer-service-feature,1,Topic match,
+/blog/deliver-superior-customer-experience-myoperators-call-recording-facility,/blog/what-call-recording-can-mean-for-your-business,1,Topic match,Blog version 404 too
+/blog/ai-agent-human-handover,/blog/ai-voice-agent-human-transfer-fallback-design,1,Topic match,
+/blog/davaindia-eliminates-call-interruptions,/blog,1,Deleted,Case study removed
+/blog/munshi-financials-scales-partner-onboarding,/blog,1,Deleted,Case study removed
